@@ -54,7 +54,7 @@ func newWsConfig(endpoint string) *WsConfig {
 var wsServe = func(cfg *WsConfig, handler WsHandler, errHandler ErrHandler) (doneCh, stopCh chan struct{}, err error) {
 	Dialer := websocket.Dialer{
 		Proxy:             http.ProxyFromEnvironment,
-		HandshakeTimeout:  45 * time.Second,
+		HandshakeTimeout:  24 * time.Hour, // 24 hours connected, it is the maximum time allowed by the Binance server
 		EnableCompression: false,
 	}
 	headers := http.Header{}
