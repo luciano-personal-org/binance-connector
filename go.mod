@@ -1,4 +1,4 @@
-module github.com/binance/binance-connector
+module github.com/luciano-personal-org/binance-connector
 
 go 1.23.2
 
