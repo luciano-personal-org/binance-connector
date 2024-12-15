@@ -2,7 +2,7 @@ package binance_connector
 
 import (
 	"context"
-	"encoding/json"
+	"github.com/goccy/go-json"
 	"fmt"
 	"testing"
 	"time"

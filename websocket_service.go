@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"encoding/json"
+	"github.com/goccy/go-json"
 )
 
 type PriceLevel struct {

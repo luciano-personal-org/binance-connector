@@ -5,7 +5,7 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
-	"encoding/json"
+	"github.com/goccy/go-json"
 	"fmt"
 	"io"
 	"log"
