@@ -59,8 +59,10 @@ var wsServe = func(cfg *WsConfig, handler WsHandler, errHandler ErrHandler) (don
 	}
 	headers := http.Header{}
 	headers.Add("User-Agent", fmt.Sprintf("%s/%s", Name, Version))
+	fmt.Printf("Connecting to: %s\n", cfg.Endpoint)
 	c, _, err := Dialer.Dial(cfg.Endpoint, headers)
 	if err != nil {
+		fmt.Println("Error dialing websocket:", err)
 		return nil, nil, err
 	}
 	c.SetReadLimit(655350)
@@ -102,6 +104,7 @@ var wsServe = func(cfg *WsConfig, handler WsHandler, errHandler ErrHandler) (don
 		}
 	}()
 	return
+
 }
 
 func keepAlive(c *websocket.Conn, timeout time.Duration) {
