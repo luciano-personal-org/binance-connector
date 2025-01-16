@@ -315,10 +315,8 @@ func (c *WebsocketStreamClient) WsCombinedKlineServe(symbolIntervalPair map[stri
 // WsKlineServe serve websocket kline handler with a symbol and interval like 15m, 30s
 func (c *WebsocketStreamClient) WsKlineServe(symbol string, interval string, handler WsKlineHandler, errHandler ErrHandler) (doneCh, stopCh chan struct{}, err error) {
 	endpoint := fmt.Sprintf("%s/%s@kline_%s", c.Endpoint, strings.ToLower(symbol), interval)
-	fmt.Printf("endpoint: %s\n", endpoint)
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
-		fmt.Printf("message: %s\n", string(message))
 		event := new(WsKlineEvent)
 		err := json.Unmarshal(message, event)
 		if err != nil {
@@ -364,10 +362,8 @@ type WsAggTradeHandler func(event *WsAggTradeEvent)
 // WsAggTradeServe serve websocket aggregate handler with a symbol
 func (c *WebsocketStreamClient) WsAggTradeServe(symbol string, handler WsAggTradeHandler, errHandler ErrHandler) (doneCh, stopCh chan struct{}, err error) {
 	endpoint := fmt.Sprintf("%s/%s@aggTrade", c.Endpoint, strings.ToLower(symbol))
-	fmt.Printf("endpoint: %s\n", endpoint)
 	cfg := newWsConfig(endpoint)
 	wsHandler := func(message []byte) {
-		fmt.Printf("message: %s\n", string(message))
 		event := new(WsAggTradeEvent)
 		err := json.Unmarshal(message, event)
 		if err != nil {

@@ -61,9 +61,9 @@ var wsServe = func(cfg *WsConfig, handler WsHandler, errHandler ErrHandler) (don
 	}
 	headers := http.Header{}
 	headers.Add("User-Agent", fmt.Sprintf("%s/%s", Name, Version))
-	fmt.Printf("Connecting to: %s\n", cfg.Endpoint)
 	c, httpResponse, err := Dialer.Dial(cfg.Endpoint, headers)
 	if err != nil {
+		fmt.Printf("Connecting to: %s\n", cfg.Endpoint)
 		fmt.Printf("HTTP Response Status: %s\n", httpResponse.Status)
 		fmt.Printf("HTTP Response Body: %s\n", httpResponse.Body)
 		fmt.Printf("HTTP Response TLS NegotiatedProtocol: %s\n", httpResponse.TLS.NegotiatedProtocol)
