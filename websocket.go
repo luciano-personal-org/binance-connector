@@ -1,7 +1,6 @@
 package binance_connector
 
 import (
-	"crypto/tls"
 	"fmt"
 	"net/http"
 	"time"
@@ -57,13 +56,17 @@ var wsServe = func(cfg *WsConfig, handler WsHandler, errHandler ErrHandler) (don
 		Proxy:             http.ProxyFromEnvironment,
 		HandshakeTimeout:  24 * time.Hour, // 24 hours connected, it is the maximum time allowed by the Binance server
 		EnableCompression: false,
-		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
+		// HandshakeTimeout:  time.Duration(10) * time.Second,
+		// TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
 	}
 	headers := http.Header{}
 	headers.Add("User-Agent", fmt.Sprintf("%s/%s", Name, Version))
 	fmt.Printf("Connecting to: %s\n", cfg.Endpoint)
-	c, _, err := Dialer.Dial(cfg.Endpoint, headers)
+	c, httpResponse, err := Dialer.Dial(cfg.Endpoint, headers)
 	if err != nil {
+		fmt.Printf("HTTP Response Status: %s\n", httpResponse.Status)
+		fmt.Printf("HTTP Response Body: %s\n", httpResponse.Body)
+		fmt.Printf("HTTP Response TLS NegotiatedProtocol: %s\n", httpResponse.TLS.NegotiatedProtocol)
 		switch err.(type) {
 		case *websocket.CloseError:
 			err = fmt.Errorf("websocket.CloseError: %v", err)
