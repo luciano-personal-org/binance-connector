@@ -2,9 +2,10 @@ package binance_connector
 
 import (
 	"context"
-	"github.com/goccy/go-json"
 	"net/http"
 	"strconv"
+
+	"github.com/goccy/go-json"
 )
 
 // Binance Test New Order endpoint (POST /api/v3/order/test)
@@ -323,7 +324,8 @@ func (s *CreateOrderService) Do(ctx context.Context, opts ...RequestOption) (res
 		r.setParam("quoteOrderQty", *s.quoteOrderQty)
 	}
 	if s.price != nil {
-		r.setParam("price", *s.price)
+		// r.setParam("price", *s.price)
+		r.setParamFloat("price", *s.price)
 	}
 	if s.newClientOrderId != nil {
 		r.setParam("newClientOrderId", *s.newClientOrderId)
@@ -335,7 +337,8 @@ func (s *CreateOrderService) Do(ctx context.Context, opts ...RequestOption) (res
 		r.setParam("strategyType", *s.strategyType)
 	}
 	if s.stopPrice != nil {
-		r.setParam("stopPrice", *s.stopPrice)
+		// r.setParam("stopPrice", *s.stopPrice)
+		r.setParamFloat("stopPrice", *s.stopPrice)
 	}
 	if s.trailingDelta != nil {
 		r.setParam("trailingDelta", *s.trailingDelta)

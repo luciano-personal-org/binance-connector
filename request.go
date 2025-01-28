@@ -48,6 +48,15 @@ func (r *request) setParam(key string, value interface{}) *request {
 	return r
 }
 
+// setParam set param with key/value to query string
+func (r *request) setParamFloat(key string, value interface{}) *request {
+	if r.query == nil {
+		r.query = url.Values{}
+	}
+	r.query.Set(key, fmt.Sprintf("%.8f", value))
+	return r
+}
+
 // setParams set params with key/values to query string
 func (r *request) setParams(m params) *request {
 	for k, v := range m {
