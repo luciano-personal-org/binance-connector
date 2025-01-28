@@ -53,7 +53,7 @@ func (r *request) setParamFloat(key string, value interface{}) *request {
 	if r.query == nil {
 		r.query = url.Values{}
 	}
-	r.query.Set(key, fmt.Sprintf("%.10f", value))
+	r.query.Set(key, fmt.Sprintf("%.8f", value))
 	return r
 }
 
