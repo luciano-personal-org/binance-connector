@@ -462,6 +462,88 @@ func (s *CreateOrderService) DoSmall(ctx context.Context, opts ...RequestOption)
 	return res, nil
 }
 
+func (s *CreateOrderService) DoHigh(ctx context.Context, opts ...RequestOption) (res interface{}, err error) {
+	respType := ACK
+	r := &request{
+		method:   http.MethodPost,
+		endpoint: "/api/v3/order",
+		secType:  secTypeSigned,
+	}
+	r.setParam("symbol", s.symbol)
+	r.setParam("side", s.side)
+	r.setParam("type", s.orderType)
+	switch s.orderType {
+	case "MARKET":
+		respType = FULL
+	case "LIMIT":
+		respType = FULL
+	}
+	if s.timeInForce != nil {
+		r.setParam("timeInForce", *s.timeInForce)
+	}
+	if s.quantity != nil {
+		r.setParam("quantity", strconv.FormatFloat(*s.quantity, 'f', -1, 64))
+	}
+	if s.quoteOrderQty != nil {
+		r.setParam("quoteOrderQty", *s.quoteOrderQty)
+	}
+	if s.price != nil {
+		// r.setParam("price", *s.price)
+		r.setParamFloat("price", *s.price)
+	}
+	if s.newClientOrderId != nil {
+		r.setParam("newClientOrderId", *s.newClientOrderId)
+	}
+	if s.strategyId != nil {
+		r.setParam("strategyId", *s.strategyId)
+	}
+	if s.strategyType != nil {
+		r.setParam("strategyType", *s.strategyType)
+	}
+	if s.stopPrice != nil {
+		// r.setParam("stopPrice", *s.stopPrice)
+		r.setParamHighFloat("stopPrice", *s.stopPrice)
+	}
+	if s.trailingDelta != nil {
+		r.setParam("trailingDelta", *s.trailingDelta)
+	}
+	if s.icebergQty != nil {
+		r.setParam("icebergQty", *s.icebergQty)
+	}
+	if s.newOrderRespType != nil {
+		r.setParam("newOrderRespType", *s.newOrderRespType)
+		switch *s.newOrderRespType {
+		case "ACK":
+			respType = ACK
+		case "RESULT":
+			respType = RESULT
+		case "FULL":
+			respType = FULL
+		}
+
+	}
+	if s.selfTradePreventionMode != nil {
+		r.setParam("selfTradePreventionMode", *s.selfTradePreventionMode)
+	}
+	data, err := s.c.callAPI(ctx, r, opts...)
+	if err != nil {
+		return nil, err
+	}
+	switch respType {
+	case ACK:
+		res = new(CreateOrderResponseACK)
+	case RESULT:
+		res = new(CreateOrderResponseRESULT)
+	case FULL:
+		res = new(CreateOrderResponseFULL)
+	}
+	err = json.Unmarshal(data, res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 // Create CreateOrderResponseACK
 type CreateOrderResponseACK struct {
 	Symbol        string `json:"symbol"`
