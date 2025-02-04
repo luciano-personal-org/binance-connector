@@ -44,7 +44,16 @@ func (r *request) setParam(key string, value interface{}) *request {
 	if r.query == nil {
 		r.query = url.Values{}
 	}
-	r.query.Set(key, fmt.Sprintf("%.8f", value))
+	r.query.Set(key, fmt.Sprintf("%v", value))
+	return r
+}
+
+// setParam set param with key/value to query string
+func (r *request) setPriceWithPrecision(key string, precision interface{}, value interface{}) *request {
+	if r.query == nil {
+		r.query = url.Values{}
+	}
+	r.query.Set(key, fmt.Sprintf(precision.(string), value))
 	return r
 }
 
