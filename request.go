@@ -53,7 +53,7 @@ func (r *request) setPriceWithPrecision(key string, precision interface{}, value
 	if r.query == nil {
 		r.query = url.Values{}
 	}
-	r.query.Set(key, fmt.Sprintf(precision.(string), value))
+	r.query.Set(key, fmt.Sprintf("%.*f", precision, value))
 	return r
 }
 

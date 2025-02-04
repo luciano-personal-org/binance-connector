@@ -199,7 +199,7 @@ type CreateOrderService struct {
 	icebergQty              *float64
 	newOrderRespType        *string
 	selfTradePreventionMode *string
-	pricePrecision          *string
+	pricePrecision          *int
 }
 
 // Symbol set symbol
@@ -244,7 +244,7 @@ func (s *CreateOrderService) Price(price float64) *CreateOrderService {
 	return s
 }
 
-func (s *CreateOrderService) PricePrecision(precision string) *CreateOrderService {
+func (s *CreateOrderService) PricePrecision(precision int) *CreateOrderService {
 	s.pricePrecision = &precision
 	return s
 }
@@ -333,7 +333,7 @@ func (s *CreateOrderService) Do(ctx context.Context, opts ...RequestOption) (res
 		// r.setParam("price", *s.price)
 		r.setParam("price", *s.price)
 	}
-	if s.pricePrecision != nil && *s.pricePrecision != "" && s.price != nil {
+	if s.pricePrecision != nil && s.price != nil {
 		r.setPriceWithPrecision("price", *s.pricePrecision, *s.price)
 	}
 	if s.newClientOrderId != nil {
