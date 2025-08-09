@@ -1,302 +1,934 @@
 # Binance Spot Go Connector
 
-This is a lightweight library that works as a connector to [Binance public API](https://github.com/binance/binance-spot-api-docs)
+[![Go Version](https://img.shields.io/badge/Go-%3E%3D1.23-blue.svg)](https://golang.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
 
-## Supported API Endpoints:
-- Account/Trade: `account.go`
-- Wallet: `wallet.go`
-- Margin Account/Trade: `margin.go`
-- Market Data: `market.go`
-- Sub-Accounts: `subaccount.go`
-- Staking: `staking.go`
-- Websocket Market/User Data Stream: `websocket.go`
-- Websocket User Data Stream: `user_stream.go`
+This is a lightweight, high-performance Go library that works as a connector to the [Binance public API](https://github.com/binance/binance-spot-api-docs). It provides a clean, idiomatic Go interface for interacting with Binance's spot trading, market data, and account management APIs.
 
-## Installation
+## ✨ Features
+
+- **Complete API Coverage**: Support for all major Binance Spot API endpoints
+- **WebSocket Support**: Real-time market data and user data streams
+- **WebSocket API**: Real-time trading operations via WebSocket
+- **Type Safety**: Strongly typed request/response structures
+- **Flexible Authentication**: Support for API key and signed requests
+- **Error Handling**: Comprehensive error handling with detailed API error responses
+- **Rate Limiting**: Built-in respect for Binance rate limits
+- **Testnet Support**: Easy switching between production and testnet environments
+- **Debug Mode**: Built-in logging for debugging and monitoring
+- **Context Support**: Full context.Context support for request cancellation and timeouts
+
+## 🚀 Quick Start
+
+### Installation
+
 ```shell
-go get github.com/binance/binance-connector-go
+go get github.com/luciano-personal-org/binance-connector
 ```
 
-To reference the package in your code, use the following import statement:
+### Import
+
 ```golang
 import (
-    "github.com/binance/binance-connector-go"
+    binance_connector "github.com/luciano-personal-org/binance-connector"
 )
 ```
-## Authentication
+
+### Basic Usage
+
 ```go
-// The Client can be initiated with apiKey, secretKey and baseURL.
-// The baseURL is optional. If not specified, it will default to "https://api.binance.com".
-client := binance_connector.NewClient("yourApiKey", "yourSecretKey")
+package main
+
+import (
+    "context"
+    "fmt"
+    "log"
+
+    binance_connector "github.com/luciano-personal-org/binance-connector"
+)
+
+func main() {
+    // Initialize client
+    client := binance_connector.NewClient("your-api-key", "your-secret-key")
+    
+    // Get account information
+    account, err := client.NewGetAccountService().Do(context.Background())
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    fmt.Println(binance_connector.PrettyPrint(account))
+}
 ```
 
-## Extra Options
-```go
-client := binance_connector.NewClient("yourApiKey", "yourSecretKey", "https://api.binance.com")
+## 📚 API Coverage
 
-// Debug Mode
+### Account & Trading
+- **Order Management**: Create, cancel, modify orders (including OCO orders)
+- **Account Information**: Get account details, balances, trading status
+- **Trade History**: Query order history, trade history, and prevented matches
+- **Order Types**: Market, Limit, Stop-Loss, Take-Profit, OCO orders
+
+### Market Data  
+- **Real-time Data**: Ticker prices, order book depth, recent trades
+- **Historical Data**: Kline/candlestick data, historical trades
+- **Statistics**: 24hr ticker statistics, price change statistics
+- **Exchange Info**: Trading rules, symbol information, filters
+
+### Wallet Operations
+- **Asset Management**: Deposit/withdrawal history, asset details
+- **Transfers**: Internal transfers, universal transfers
+- **Dust Conversion**: Convert small balances to BNB
+- **API Management**: API key permissions, trading status
+
+### Margin Trading
+- **Margin Orders**: Place and manage margin orders
+- **Account Management**: Margin account details, isolated margin
+- **Borrowing/Lending**: Query max borrow, repay history
+- **Risk Management**: Liquidation records, margin ratios
+
+### Sub-Account Management
+- **Account Creation**: Create and manage sub-accounts
+- **Asset Management**: Transfer assets between sub-accounts  
+- **Futures & Margin**: Enable futures/margin for sub-accounts
+- **Monitoring**: Query sub-account status and transaction statistics
+
+### FIAT Operations
+- **Payment History**: Query fiat payment transactions
+- **Deposit/Withdrawal**: FIAT deposit and withdrawal history
+## 🔐 Authentication
+
+### Basic Client Setup
+```go
+// Initialize with API credentials
+client := binance_connector.NewClient("your-api-key", "your-secret-key")
+
+// Or specify custom base URL (optional)
+client := binance_connector.NewClient("your-api-key", "your-secret-key", "https://api.binance.com")
+```
+
+### API Key Requirements
+
+Different endpoints require different authentication levels:
+
+- **Public endpoints** (market data): No authentication required
+- **API-KEY required**: Requires valid API key in request header
+- **SIGNED required**: Requires API key + signature for private operations
+
+### Client Configuration
+
+```go
+client := binance_connector.NewClient("api-key", "secret-key", "base-url")
+
+// Enable debug logging
 client.Debug = true
 
-// TimeOffset (in milliseconds) - used to adjust the request timestamp by subtracting/adding the current time with it:
-client.TimeOffset = -1000 // implies adding: request timestamp = current time - (-1000)
+// Adjust request timestamp (useful for server time sync issues)
+client.TimeOffset = -1000 // milliseconds adjustment
+
+// Custom HTTP client with timeout
+client.HTTPClient = &http.Client{
+    Timeout: 10 * time.Second,
+}
 ```
 
-## REST API
+## 📈 REST API Examples
 
-Create an order example
+### Trading Operations
+
+#### Create Market Order
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "log"
+
+    binance_connector "github.com/luciano-personal-org/binance-connector"
+)
+
+func main() {
+    // Initialize client with testnet
+    client := binance_connector.NewClient("your-api-key", "your-secret-key", "https://testnet.binance.vision")
+
+    // Create market buy order
+    order, err := client.NewCreateOrderService().
+        Symbol("BTCUSDT").
+        Side("BUY").
+        Type("MARKET").
+        Quantity(0.001).
+        Do(context.Background())
+    
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    fmt.Println("Order created:", binance_connector.PrettyPrint(order))
+}
+```
+
+#### Create Limit Order
+```go
+// Create limit sell order
+order, err := client.NewCreateOrderService().
+    Symbol("BTCUSDT").
+    Side("SELL").
+    Type("LIMIT").
+    TimeInForce("GTC").
+    Quantity(0.001).
+    Price(45000.00).
+    Do(context.Background())
+```
+
+#### Cancel Order
+```go
+// Cancel order by order ID
+result, err := client.NewCancelOrderService().
+    Symbol("BTCUSDT").
+    OrderId(12345).
+    Do(context.Background())
+```
+
+#### OCO (One-Cancels-Other) Orders
+```go
+// Create OCO order
+ocoOrder, err := client.NewNewOCOService().
+    Symbol("BTCUSDT").
+    Side("SELL").
+    Quantity(1.0).
+    Price(50000.00).        // Limit price
+    StopPrice(45000.00).    // Stop price
+    StopLimitPrice(44800.00). // Stop limit price
+    Do(context.Background())
+```
+
+### Market Data
+
+#### Get Order Book
+```go
+// Get order book depth
+orderBook, err := client.NewOrderBookService().
+    Symbol("BTCUSDT").
+    Limit(100).
+    Do(context.Background())
+```
+
+#### Get Kline Data
+```go
+// Get candlestick data
+klines, err := client.NewKlinesService().
+    Symbol("BTCUSDT").
+    Interval("1h").
+    StartTime(1640995200000). // Unix timestamp in milliseconds
+    EndTime(1641081600000).
+    Limit(500).
+    Do(context.Background())
+```
+
+#### Get 24hr Ticker Statistics
+```go
+// Get 24hr ticker for single symbol
+ticker, err := client.NewTicker24hrService().
+    Symbol("BTCUSDT").
+    Do(context.Background())
+
+// Get 24hr ticker for all symbols
+allTickers, err := client.NewTicker24hrService().
+    Do(context.Background())
+```
+
+### Account Information
+
+#### Get Account Details
+```go
+// Get account information
+account, err := client.NewGetAccountService().
+    Do(context.Background())
+```
+
+#### Get Trade History
+```go
+// Get account trade list
+trades, err := client.NewGetMyTradesService().
+    Symbol("BTCUSDT").
+    StartTime(1640995200000).
+    EndTime(1641081600000).
+    Limit(500).
+    Do(context.Background())
+```
+
+### Request Options
+
+You can use request options to customize individual requests:
+
+```go
+// Use custom receive window
+order, err := client.NewCreateOrderService().
+    Symbol("BTCUSDT").
+    Side("BUY").
+    Type("MARKET").
+    Quantity(0.001).
+    Do(context.Background(), binance_connector.WithRecvWindow(10000))
+```
+
+### Error Handling
+
+```go
+order, err := client.NewCreateOrderService().
+    Symbol("BTCUSDT").
+    Side("BUY").
+    Type("MARKET").
+    Quantity(0.001).
+    Do(context.Background())
+
+if err != nil {
+    // Check if it's an API error
+    if apiErr, ok := err.(*handlers.APIError); ok {
+        fmt.Printf("API Error: Code=%d, Message=%s\n", apiErr.Code, apiErr.Message)
+    } else {
+        fmt.Printf("Network/Other Error: %v\n", err)
+    }
+    return
+}
+```
+
+### 📁 Examples Directory
+
+Comprehensive examples for all endpoints can be found in the `examples/` directory:
+
+- `examples/account/` - Trading and account operations
+- `examples/market/` - Market data endpoints  
+- `examples/wallet/` - Wallet and asset operations
+- `examples/margin/` - Margin trading
+- `examples/subaccount/` - Sub-account management
+- `examples/websocket/` - WebSocket stream examples
+- `examples/websocket_api/` - WebSocket API examples
+
+## 🌐 WebSocket Streams
+
+WebSocket streams provide real-time market data and user account updates with low latency.
+
+### Stream Client Initialization
+
+```go
+// Single stream client (for individual symbol streams)
+wsClient := binance_connector.NewWebsocketStreamClient(false, "wss://stream.binance.com:9443")
+
+// Combined stream client (for multiple streams in one connection)
+wsClient := binance_connector.NewWebsocketStreamClient(true, "wss://stream.binance.com:9443")
+
+// Testnet
+wsClient := binance_connector.NewWebsocketStreamClient(false, "wss://stream.testnet.binance.vision")
+```
+
+### Parameters
+- **`isCombined`** (boolean): 
+  - `false`: Individual stream mode (`/ws/` endpoint)
+  - `true`: Combined stream mode (`/stream?streams=` endpoint)
+- **`baseURL`** (optional string): WebSocket base URL
+  - Defaults to `"wss://stream.binance.com:9443"` if not specified
+
+### Market Data Streams
+
+#### Order Book Depth Stream
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+    "time"
+
+    binance_connector "github.com/luciano-personal-org/binance-connector"
+)
+
+func main() {
+    // Initialize WebSocket client
+    wsClient := binance_connector.NewWebsocketStreamClient(false, "wss://stream.testnet.binance.vision")
+
+    // Define event handler
+    depthHandler := func(event *binance_connector.WsDepthEvent) {
+        fmt.Printf("Symbol: %s, Bids: %d, Asks: %d\n", 
+            event.Symbol, len(event.Bids), len(event.Asks))
+    }
+
+    // Define error handler
+    errHandler := func(err error) {
+        log.Printf("WebSocket error: %v", err)
+    }
+
+    // Subscribe to depth stream
+    doneCh, stopCh, err := wsClient.WsDepthServe("BTCUSDT", depthHandler, errHandler)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Stop after 30 seconds
+    go func() {
+        time.Sleep(30 * time.Second)
+        stopCh <- struct{}{}
+    }()
+
+    // Wait for completion
+    <-doneCh
+}
+```
+
+#### Kline/Candlestick Stream
+```go
+// Kline stream handler
+klineHandler := func(event *binance_connector.WsKlineEvent) {
+    k := event.Kline
+    fmt.Printf("Symbol: %s, Open: %s, High: %s, Low: %s, Close: %s, Volume: %s\n",
+        k.Symbol, k.Open, k.High, k.Low, k.Close, k.Volume)
+}
+
+doneCh, stopCh, err := wsClient.WsKlineServe("BTCUSDT", "1m", klineHandler, errHandler)
+```
+
+#### Trade Stream
+```go
+// Trade stream handler
+tradeHandler := func(event *binance_connector.WsTradeEvent) {
+    fmt.Printf("Trade: %s %s@%s (Qty: %s)\n", 
+        event.Symbol, event.Side, event.Price, event.Quantity)
+}
+
+doneCh, stopCh, err := wsClient.WsTradeServe("BTCUSDT", tradeHandler, errHandler)
+```
+
+#### 24hr Ticker Stream
+```go
+// Ticker stream handler
+tickerHandler := func(event *binance_connector.WsTicker24HrEvent) {
+    fmt.Printf("24hr Ticker: %s - Price: %s, Change: %s%%\n",
+        event.Symbol, event.LastPrice, event.PriceChangePercent)
+}
+
+doneCh, stopCh, err := wsClient.WsTicker24HrServe("BTCUSDT", tickerHandler, errHandler)
+```
+
+### Combined Streams
+
+Subscribe to multiple streams in a single connection:
 
 ```go
 package main
 
 import (
-	"context"
-	"fmt"
+    "fmt"
+    "log"
+    "time"
 
-	binance_connector "github.com/binance/binance-connector-go"
+    binance_connector "github.com/luciano-personal-org/binance-connector"
 )
 
 func main() {
-	apiKey := "yourApiKey"
-	secretKey := "yourSecretKey"
-	baseURL := "https://testnet.binance.vision"
+    // Initialize combined stream client
+    wsClient := binance_connector.NewWebsocketStreamClient(true)
 
-	// Initialise the client
-	client := binance_connector.NewClient(apiKey, secretKey, baseURL)
+    // Combined depth handler
+    combinedDepthHandler := func(event *binance_connector.WsDepthEvent) {
+        fmt.Printf("[%s] Depth Update - Bids: %d, Asks: %d\n", 
+            event.Symbol, len(event.Bids), len(event.Asks))
+    }
 
-	// Create new order
-	newOrder, err := client.NewCreateOrderService().Symbol("BTCUSDT").
-		Side("BUY").Type("MARKET").Quantity(0.001).
-		Do(context.Background())
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println(binance_connector.PrettyPrint(newOrder))
+    errHandler := func(err error) {
+        log.Printf("WebSocket error: %v", err)
+    }
+
+    // Subscribe to multiple symbols
+    symbols := []string{"BTCUSDT", "ETHUSDT", "BNBUSDT"}
+    doneCh, stopCh, err := wsClient.WsCombinedDepthServe(symbols, combinedDepthHandler, errHandler)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Stop after 60 seconds
+    go func() {
+        time.Sleep(60 * time.Second)
+        stopCh <- struct{}{}
+    }()
+
+    <-doneCh
 }
 ```
 
-Please find more examples for each supported endpoint in the `examples` folder.
+### User Data Streams
 
-## Websocket Stream
-Initialising Websocket Client
-- Websocket Client can be initialized with 2 parameters, `NewWebsocketStreamClient(isCombined, baseURL)`:
-- `isCombined` is a MANDATORY boolean value that specifies whether you are calling a combined stream or not.
-  - If `isCombined` is set to `true`, `"/stream?streams="` will be appended to the `baseURL` to allow for Combining streams.
-  - Otherwise, if set to `false`, `"/ws/"` will be appended to the `baseURL`.
-- `baseURL` is an OPTIONAL string value that determines the base URL to use for the websocket connection.
-  - If `baseURL` is not set, it will default to the Live Exchange URL: `"wss://stream.binance.com:9443"`.
+For private account and order updates:
 
 ```go
-// Initialise Websocket Client with Production baseURL and false for "isCombined" parameter
+// Create listen key for user data stream
+listenKeyResp, err := client.NewCreateListenKeyService().Do(context.Background())
+if err != nil {
+    log.Fatal(err)
+}
 
-websocketStreamClient := binance_connector.NewWebsocketStreamClient(false, "wss://stream.testnet.binance.vision")
+// User data stream handler
+userDataHandler := func(event *binance_connector.WsUserDataEvent) {
+    switch event.EventType {
+    case "outboundAccountPosition":
+        fmt.Println("Account update:", binance_connector.PrettyPrint(event))
+    case "executionReport":
+        fmt.Println("Order update:", binance_connector.PrettyPrint(event))
+    }
+}
 
-// Initialise Websocket Client with Production baseURL and true for "isCombined" parameter
-
-websocketStreamClient := binance_connector.NewWebsocketStreamClient(true)
+doneCh, stopCh, err := wsClient.WsUserDataServe(listenKeyResp.ListenKey, userDataHandler, errHandler)
 ```
 
-Diff. Depth Stream Example
+### Stream Management
 
+```go
+// Graceful shutdown example
+func gracefulShutdown() {
+    wsClient := binance_connector.NewWebsocketStreamClient(false)
+    
+    depthHandler := func(event *binance_connector.WsDepthEvent) {
+        // Handle depth updates
+    }
+    
+    errHandler := func(err error) {
+        log.Printf("WebSocket error: %v", err)
+    }
+
+    doneCh, stopCh, err := wsClient.WsDepthServe("BTCUSDT", depthHandler, errHandler)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Handle shutdown signals
+    c := make(chan os.Signal, 1)
+    signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
+    go func() {
+        <-c
+        log.Println("Shutting down WebSocket...")
+        stopCh <- struct{}{}
+    }()
+
+    <-doneCh
+    log.Println("WebSocket closed")
+}
+```
+
+## ⚡ WebSocket API
+
+The WebSocket API enables real-time trading operations with lower latency than REST API.
+
+### Client Initialization
+
+```go
+// Initialize WebSocket API client
+wsAPIClient := binance_connector.NewWebsocketAPIClient("your-api-key", "your-secret-key")
+
+// Connect to the API
+err := wsAPIClient.Connect()
+if err != nil {
+    log.Fatal("Connection failed:", err)
+}
+defer wsAPIClient.Close()
+```
+
+### Trading via WebSocket API
+
+#### Place Order
 ```go
 package main
 
 import (
-	"fmt"
-	"time"
+    "context"
+    "fmt"
+    "log"
 
-	binance_connector "github.com/binance/binance-connector-go"
+    binance_connector "github.com/luciano-personal-org/binance-connector"
 )
 
 func main() {
-	// Initialise Websocket Client with Testnet BaseURL and false for "isCombined" parameter
-	websocketStreamClient := binance_connector.NewWebsocketStreamClient(false, "wss://stream.testnet.binance.vision")
+    // Initialize WebSocket API client
+    client := binance_connector.NewWebsocketAPIClient("your-api-key", "your-secret-key")
+    
+    // Connect
+    err := client.Connect()
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer client.Close()
 
-	wsDepthHandler := func(event *binance_connector.WsDepthEvent) {
-		fmt.Println(binance_connector.PrettyPrint(event))
-	}
+    // Place new order via WebSocket API
+    orderResp, err := client.NewPlaceNewOrderService().
+        Symbol("BTCUSDT").
+        Side("BUY").
+        Type("LIMIT").
+        TimeInForce("GTC").
+        Quantity(0.001).
+        Price(40000.00).
+        Do(context.Background())
+    
+    if err != nil {
+        log.Printf("Order failed: %v", err)
+        return
+    }
 
-	errHandler := func(err error) {
-		fmt.Println(err)
-	}
+    fmt.Println("Order placed:", binance_connector.PrettyPrint(orderResp))
 
-	// Depth stream subscription
-	doneCh, stopCh, err := websocketStreamClient.WsDepthServe("BNBUSDT", wsDepthHandler, errHandler)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	go func() {
-		time.Sleep(30 * time.Second)
-		stopCh <- struct{}{} // use stopCh to stop streaming
-	}()
-
-	<-doneCh
+    // Wait for close signal
+    client.WaitForCloseSignal()
 }
 ```
 
-Combined Diff. Depth Stream Example
+#### Cancel Order
+```go
+// Cancel order via WebSocket API
+cancelResp, err := client.NewCancelOrderService().
+    Symbol("BTCUSDT").
+    OrderId(12345).
+    Do(context.Background())
+```
+
+#### Query Account Information
+```go
+// Get account information via WebSocket API
+accountResp, err := client.NewAccountInformationService().
+    Do(context.Background())
+```
+
+#### Query Order History
+```go
+// Query OCO history
+ocoHistory, err := client.NewAccountOCOHistoryService().
+    Do(context.Background())
+
+// Query order history
+orderHistory, err := client.NewOrderHistoryService().
+    Symbol("BTCUSDT").
+    Do(context.Background())
+```
+
+### Market Data via WebSocket API
 
 ```go
-package main
+// Get order book via WebSocket API
+depthResp, err := client.NewDepthService().
+    Symbol("BTCUSDT").
+    Limit(100).
+    Do(context.Background())
 
-import (
-	"fmt"
-	"time"
+// Get recent trades
+tradesResp, err := client.NewRecentTradesService().
+    Symbol("BTCUSDT").
+    Limit(500).
+    Do(context.Background())
 
-	binance_connector "github.com/binance/binance-connector-go"
-)
-
-func main() {
-	// Set isCombined parameter to true as we are using Combined Depth Stream
-	websocketStreamClient := binance_connector.NewWebsocketStreamClient(true)
-
-	wsCombinedDepthHandler := func(event *binance_connector.WsDepthEvent) {
-		fmt.Println(binance_connector.PrettyPrint(event))
-	}
-	errHandler := func(err error) {
-		fmt.Println(err)
-	}
-	// Use WsCombinedDepthServe to subscribe to multiple streams
-	doneCh, stopCh, err := websocketStreamClient.WsCombinedDepthServe([]string{"LTCBTC", "BTCUSDT", "MATICUSDT"}, wsCombinedDepthHandler, errHandler)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	go func() {
-		time.Sleep(5 * time.Second)
-		stopCh <- struct{}{}
-	}()
-	<-doneCh
-}
+// Get klines
+klinesResp, err := client.NewKlinesService().
+    Symbol("BTCUSDT").
+    Interval("1h").
+    Limit(100).
+    Do(context.Background())
 ```
 
-## Websocket API
+### Connection Management
 
 ```go
-func OCOHistoryExample() {
-	// Initialise Websocket API Client
-	client := binance_connector.NewWebsocketAPIClient("api_key", "secret_key")
-	// Connect to Websocket API
-	err := client.Connect()
-	if err != nil {
-		log.Printf("Error: %v", err)
-		return
-	}
-	defer client.Close()
-
-	// Send request to Websocket API
-	response, err := client.NewAccountOCOHistoryService().Do(context.Background())
-	if err != nil {
-		log.Printf("Error: %v", err)
-		return
-	}
-
-	// Print the response
-	fmt.Println(binance_connector.PrettyPrint(response))
-
-	client.WaitForCloseSignal()
+func managedWebSocketAPI() {
+    client := binance_connector.NewWebsocketAPIClient("api-key", "secret-key")
+    
+    // Connect with error handling
+    if err := client.Connect(); err != nil {
+        log.Fatal("Failed to connect:", err)
+    }
+    
+    // Ensure proper cleanup
+    defer func() {
+        client.Close()
+        log.Println("WebSocket API client closed")
+    }()
+    
+    // Your trading logic here...
+    
+    // Wait for external close signal or handle gracefully
+    client.WaitForCloseSignal()
 }
 ```
 
-## Base URL
-- Binance provides alternative Production URLs in case of performance issues:
-  - https://api1.binance.com
-  - https://api2.binance.com
-  - https://api3.binance.com
+## 🌍 Environment Configuration
 
-## Testnet Support
-- In order to use the Testnet, simply set the `baseURL` to "https://testnet.binance.vision"
-- You can find step-by-step instructions on how to use the get a Testnet API and Secret Key [here](https://dev.binance.vision/t/binance-testnet-environments/99)
+### Production URLs
 
-## Pretty Print vs PrintLn
-- The `fmt.Println(<response>)` function will print the struct in a single line, which is not very readable.
-- The `fmt.Println(binance_connector.PrettyPrint(<response>))` function will print the struct, including both the key and value, in a multi-line format which is more easily readable.
+Binance provides multiple production endpoints for load balancing and redundancy:
 
-### Regular PrintLn Example Output
+- **Primary**: `https://api.binance.com`
+- **Alternatives**: 
+  - `https://api1.binance.com`
+  - `https://api2.binance.com`  
+  - `https://api3.binance.com`
+
+### WebSocket URLs
+
+- **Production Stream**: `wss://stream.binance.com:9443`
+- **Production API**: `wss://ws-api.binance.com:443`
+
+### Testnet Support
+
+#### REST API Testnet
+```go
+client := binance_connector.NewClient("testnet-api-key", "testnet-secret-key", "https://testnet.binance.vision")
+```
+
+#### WebSocket Stream Testnet  
+```go
+wsClient := binance_connector.NewWebsocketStreamClient(false, "wss://stream.testnet.binance.vision")
+```
+
+#### WebSocket API Testnet
+```go
+wsAPIClient := binance_connector.NewWebsocketAPIClient("testnet-api-key", "testnet-secret-key")
+// Testnet WebSocket API URL is configured automatically when using testnet credentials
+```
+
+### Getting Testnet Credentials
+
+1. Visit [Binance Testnet](https://testnet.binance.vision/)
+2. Create an account or log in
+3. Generate API key and secret
+4. Fund your testnet account with test assets
+
+**📖 Testnet Guide**: [Complete testnet setup instructions](https://dev.binance.vision/t/binance-testnet-environments/99)
+
+## 🛠️ Development & Testing
+
+### Prerequisites
+- **Go**: Version 1.23 or higher
+- **Binance Account**: For production API access
+- **Testnet Account**: For development and testing
+
+### Running Tests
 ```bash
-&{depthUpdate 1680092520368 LTCBTC 1989614201 1989614210 [{0.00322300 70.96700000} {0.00322200 52.57100000} {0.00322000 248.64000000} {0.00321900 34.98300000}] [{0.00322600 71.52600000} {0.00323400 53.88900000} {0.00323500 27.37000000}]}
-&{depthUpdate 1680092521368 LTCBTC 1989614211 1989614212 [{0.00320700 197.10100000} {0.00320100 15.76800000}] []}
-&{depthUpdate 1680092522368 LTCBTC 1989614213 1989614224 [{0.00322300 86.15400000} {0.00322200 37.38400000} {0.00322100 252.53900000} {0.00322000 60.01300000}] [{0.00322800 75.48400000} {0.00322900 254.84500000} {0.00323000 8.74700000} {0.00323100 37.42800000}]}
-&{depthUpdate 1680092523369 LTCBTC 1989614225 1989614226 [{0.00322300 103.57400000}] [{0.00399500 11.75400000}]}
-&{depthUpdate 1680092524369 LTCBTC 1989614227 1989614276 [{0.00322500 0.00000000} {0.00322400 101.32700000} {0.00322300 138.82600000} {0.00322200 58.49100000} {0.00322100 249.65400000} {0.00321900 47.34800000} {0.00317800 16.08500000} {0.00317500 38.36500000}] [{0.00322500 75.14300000} {0.00322600 48.19100000} {0.00322700 44.97900000} {0.00322800 242.74300000} {0.00322900 20.73400000} {0.00532700 0.18900000} {0.00779700 0.05600000}]}
+# Run all tests
+go test ./...
+
+# Run tests with verbose output
+go test -v ./...
+
+# Run tests with race detection  
+go test -race ./...
+
+# Run specific test file
+go test -v ./account_test.go
 ```
 
-### binance_connector.PrettyPrint Example Output
+### Code Quality
 ```bash
-{
-	"e": "depthUpdate",
-	"E": 1680092041346,
-	"s": "LTCBTC",
-    "U": 1989606566,
-	"u": 1989606596,
-	"b": [
-		{
-			"Price": "0.00322800",
-			"Quantity": "83.05100000"
-		},
-		{
-			"Price": "0.00322700",
-			"Quantity": "12.50200000"
-		},
-		{
-			"Price": "0.00322500",
-			"Quantity": "48.53700000"
-		},
-		{
-			"Price": "0.00322400",
-			"Quantity": "244.13500000"
-		}
-	],
-	"a": [
-		{
-			"Price": "0.00322900",
-			"Quantity": "79.52900000"
-		},
-		{
-			"Price": "0.00323000",
-			"Quantity": "42.68400000"
-		},
-		{
-			"Price": "0.00323100",
-			"Quantity": "68.75500000"
-		}
-	]
-}
-{
-	"e": "depthUpdate",
-	"E": 1680092042346,
-	"s": "LTCBTC",
-	"U": 1989606597,
-	"u": 1989606611,
-	"b": [
-		{
-			"Price": "0.00321400",
-			"Quantity": "0.24700000"
-		},
-		{
-			"Price": "0.00318000",
-			"Quantity": "1.91600000"
-		}
-	],
-	"a": [
-		{
-			"Price": "0.00322900",
-			"Quantity": "79.27900000"
-		}
-	]
+# Format code
+go fmt ./...
+
+# Run static analysis
+go vet ./...
+
+# Tidy dependencies
+go mod tidy
+```
+
+### Running Examples
+```bash
+# Navigate to specific example
+cd examples/account/CreateOrder
+
+# Run the example
+go run CreateOrder.go
+```
+
+## 🎯 Best Practices
+
+### 1. Error Handling
+Always handle errors appropriately and check for API-specific error codes:
+
+```go
+if err != nil {
+    if apiErr, ok := err.(*handlers.APIError); ok {
+        switch apiErr.Code {
+        case -1013:
+            log.Println("Invalid quantity")
+        case -2010:
+            log.Println("Insufficient balance")
+        default:
+            log.Printf("API Error: %d - %s", apiErr.Code, apiErr.Message)
+        }
+    }
+    return
 }
 ```
 
-## Limitations
-Futures and European Options APIs are not supported:
-- /fapi/*
-- /dapi/*
-- /vapi/*
-- Associated Websocket Market and User Data Streams
+### 2. Context Usage
+Always use context for request timeout and cancellation:
 
-## Contributing
-Contributions are welcome.<br/>
-If you've found a bug within this project, please open an issue to discuss what you would like to change.<br/>
-If it's an issue with the API, please open a topic at [Binance Developer Community](https://dev.binance.vision)
+```go
+ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+defer cancel()
+
+response, err := client.NewCreateOrderService().
+    Symbol("BTCUSDT").
+    Do(ctx)
+```
+
+### 3. Rate Limiting
+Respect Binance rate limits by implementing proper delays:
+
+```go
+import "time"
+
+// Add delay between requests
+time.Sleep(100 * time.Millisecond)
+```
+
+### 4. WebSocket Reconnection
+Implement reconnection logic for WebSocket streams:
+
+```go
+func reconnectableStream() {
+    for {
+        wsClient := binance_connector.NewWebsocketStreamClient(false)
+        doneCh, stopCh, err := wsClient.WsDepthServe("BTCUSDT", handler, errHandler)
+        
+        if err != nil {
+            log.Printf("Connection failed, retrying in 5s: %v", err)
+            time.Sleep(5 * time.Second)
+            continue
+        }
+        
+        <-doneCh
+        log.Println("Connection lost, reconnecting...")
+        time.Sleep(1 * time.Second)
+    }
+}
+```
+
+## 📊 Output Formatting
+
+### PrettyPrint vs Standard Output
+
+The library provides a `PrettyPrint` function for readable JSON output:
+
+```go
+// Standard output - single line, hard to read
+fmt.Println(response)
+
+// Pretty print - formatted JSON, easy to read
+fmt.Println(binance_connector.PrettyPrint(response))
+```
+
+**Standard Output Example:**
+```
+&{depthUpdate 1680092520368 LTCBTC 1989614201 1989614210 [...]}
+```
+
+**PrettyPrint Output Example:**
+```json
+{
+  "e": "depthUpdate",
+  "E": 1680092041346,
+  "s": "LTCBTC",
+  "U": 1989606566,
+  "u": 1989606596,
+  "b": [
+    {
+      "Price": "0.00322800",
+      "Quantity": "83.05100000"
+    }
+  ],
+  "a": [
+    {
+      "Price": "0.00322900", 
+      "Quantity": "79.52900000"
+    }
+  ]
+}
+```
+
+## ⚠️ Limitations
+
+This library focuses on **Spot Trading APIs only**. The following are **NOT supported**:
+
+- **Futures Trading**: `/fapi/*` endpoints
+- **Delivery Futures**: `/dapi/*` endpoints  
+- **Options Trading**: `/vapi/*` endpoints
+- **Associated WebSocket streams** for futures/options
+
+For futures trading, use the official Binance Futures Go connector.
+
+## 🧪 Troubleshooting
+
+### Common Issues
+
+#### 1. Timestamp Errors
+```
+Error: Timestamp for this request is outside of the recvWindow
+```
+**Solution**: Adjust time offset
+```go
+client.TimeOffset = -1000 // Adjust based on your system
+```
+
+#### 2. Signature Errors
+```
+Error: Signature for this request is not valid
+```
+**Solution**: Verify API credentials and ensure proper parameter ordering
+
+#### 3. Rate Limit Exceeded
+```
+Error: Too many requests
+```
+**Solution**: Implement exponential backoff and respect rate limits
+
+#### 4. WebSocket Connection Issues
+```
+Error: WebSocket connection failed
+```
+**Solution**: Check network connectivity and implement reconnection logic
+
+### Debug Mode
+Enable debug logging to troubleshoot issues:
+
+```go
+client.Debug = true
+// This will log all HTTP requests and responses
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how you can help:
+
+1. **🐛 Bug Reports**: Open an issue with detailed reproduction steps
+2. **💡 Feature Requests**: Suggest new features or improvements  
+3. **🔧 Code Contributions**: Submit pull requests with tests
+4. **📚 Documentation**: Improve examples and documentation
+
+### Before Contributing
+- Ensure all tests pass: `go test ./...`
+- Format your code: `go fmt ./...`
+- Follow existing code patterns and conventions
+- Add tests for new functionality
+
+### API Issues
+For Binance API-related issues (not library bugs), please visit the [Binance Developer Community](https://dev.binance.vision).
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+
+## 🔗 Resources
+
+- **[Binance API Documentation](https://github.com/binance/binance-spot-api-docs)** - Official API docs
+- **[Binance Developer Community](https://dev.binance.vision)** - Community support
+- **[Binance Testnet](https://testnet.binance.vision/)** - Testing environment
+- **[Go Documentation](https://pkg.go.dev/github.com/luciano-personal-org/binance-connector)** - Package documentation
+
+---
+
+⭐ If this library helps you, please consider giving it a star!
+
+For questions or support, feel free to open an issue or visit the Binance Developer Community.
